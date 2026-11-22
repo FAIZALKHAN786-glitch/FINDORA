@@ -12,7 +12,7 @@ export default function Input({ label, hint, error, className = '', id, ...props
         id={inputId}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={describedBy}
-        className={`h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted/70 transition-colors duration-150 hover:border-ink/20 focus:border-accent ${className}`}
+        className={`h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted/70 transition-[border-color,box-shadow] duration-150 ease-out hover:border-ink/25 focus:border-clay focus:ring-2 focus:ring-clay/10 ${className}`}
         {...props}
       />
       {hint && !error && <p id={`${inputId}-hint`} className="text-xs text-muted">{hint}</p>}

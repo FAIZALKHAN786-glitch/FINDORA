@@ -91,13 +91,13 @@ export default function Report() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="animate-rise">
-        <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-accent">New notice</p>
-        <h1 className="text-3xl font-bold tracking-[-0.03em] text-ink sm:text-4xl">Report an item</h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">Give the next person enough detail to recognise it. A photo helps more than anything else.</p>
+        <p className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-clay"><span className="h-px w-6 bg-clay" /> New notice</p>
+        <h1 className="text-balance text-4xl font-extrabold tracking-[-0.045em] text-ink sm:text-5xl">Report an item</h1>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">Give the next person enough detail to recognise it. A photo helps more than anything else.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <Card className="animate-rise p-5 sm:p-6 [animation-delay:60ms]">
+        <Card className="paper-grain relative animate-rise p-5 sm:p-6 [animation-delay:60ms]">
           <form onSubmit={submit} className="space-y-5" noValidate>
             <div className="grid gap-4 sm:grid-cols-2">
               <Select label="This item is…" value={form.status} onChange={(event) => set('status', event.target.value)}>
@@ -126,13 +126,13 @@ export default function Report() {
 
             <div className="space-y-2">
               <label htmlFor="photo" className="block text-sm font-semibold text-ink">Photo (optional)</label>
-              <div className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-line bg-paper/60 p-4">
+              <div className="flex flex-wrap items-center gap-4 rounded-notice border border-dashed border-clay/30 bg-paper/70 p-4">
                 <input
                   id="photo"
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   onChange={onFile}
-                  className="max-w-full text-xs text-muted file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-accent-soft file:px-3 file:text-sm file:font-semibold file:text-accent hover:file:bg-accent/15"
+                  className="max-w-full text-xs text-muted file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-clay-soft file:px-3 file:text-sm file:font-semibold file:text-clay hover:file:bg-clay/15"
                 />
                 <span className="text-xs text-muted">JPG, PNG, WEBP or GIF · up to 5 MB</span>
               </div>
@@ -151,7 +151,7 @@ export default function Report() {
         </Card>
 
         <aside className="space-y-4">
-          <Card className="p-5">
+          <Card className="paper-grain relative p-5">
             <h2 className="text-sm font-bold text-ink">Before you post</h2>
             <ul className="mt-3 space-y-3 text-xs leading-relaxed text-muted">
               <li className="flex gap-2"><Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Check the board first — it may already be listed.</li>
@@ -159,8 +159,8 @@ export default function Report() {
               <li className="flex gap-2"><Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Mark it claimed once it is back with its owner.</li>
             </ul>
           </Card>
-          <div className="rounded-card border border-accent/15 bg-accent-soft/50 p-5 text-xs leading-relaxed text-ink/70">
-            <Icon name="shield" className="mb-2 h-5 w-5 text-accent" />
+          <div className="rounded-card border border-dashed border-clay/25 bg-clay-soft/60 p-5 text-xs leading-relaxed text-ink/70">
+            <Icon name="shield" className="mb-2 h-5 w-5 text-clay" />
             Your contact details appear only on your notice. Nothing is emailed or stored anywhere else.
           </div>
         </aside>

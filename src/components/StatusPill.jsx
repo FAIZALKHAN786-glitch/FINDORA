@@ -1,9 +1,9 @@
 import React from 'react';
 
 const styles = {
-  lost: 'border-danger/20 bg-danger/5 text-danger',
-  found: 'border-success/20 bg-success/5 text-success',
-  claimed: 'border-accent/20 bg-accent-soft text-accent',
+  lost: 'border-[#e7cdc0] bg-clay-soft text-clay',
+  found: 'border-[#cddbd2] bg-[#eef3ef] text-success',
+  claimed: 'border-line bg-paper text-ink',
   returned: 'border-line bg-ink/5 text-muted',
 };
 
@@ -15,8 +15,10 @@ const labels = {
 };
 
 export default function StatusPill({ status }) {
+  const style = styles[status] || styles.returned;
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${styles[status] || styles.returned}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${style}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
       {labels[status] || status}
     </span>
   );

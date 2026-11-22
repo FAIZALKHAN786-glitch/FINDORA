@@ -1,4 +1,4 @@
-# Campus Lost & Found — Postgres MVP redesign
+# Findora — Postgres MVP redesign
 
 ## Intent
 

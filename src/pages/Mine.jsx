@@ -71,8 +71,8 @@ export default function Mine() {
     <div className="space-y-7">
       <div className="animate-rise flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-accent">Your notices</p>
-          <h1 className="text-3xl font-bold tracking-[-0.03em] text-ink sm:text-4xl">My items</h1>
+          <p className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-clay"><span className="h-px w-6 bg-clay" /> Your notices</p>
+          <h1 className="text-balance text-4xl font-extrabold tracking-[-0.045em] text-ink sm:text-5xl">My items</h1>
           <p className="mt-2 text-sm text-muted">{items.length} total · {open} still open</p>
         </div>
         <Button onClick={() => navigate('/report')}><Icon name="plus" className="h-4 w-4" /> New notice</Button>
@@ -98,9 +98,9 @@ export default function Mine() {
             const image = photoUrl(item.photo_url);
             const pending = confirming === item.id;
             return (
-              <Card key={item.id} className="animate-rise overflow-hidden p-0">
+              <Card key={item.id} className="animate-rise overflow-hidden p-0 paper-grain">
                 <button type="button" onClick={() => navigate(`/item/${item.id}`)} className="block w-full text-left" aria-label={`View ${item.title}`}>
-                  <div className="flex h-32 items-center justify-center overflow-hidden border-b border-line bg-ink/[0.04]">
+                  <div className="flex h-32 items-center justify-center overflow-hidden border-b border-line bg-[#eceae4]">
                     {image ? <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" /> : <Icon name="tag" className="h-8 w-8 text-ink/20" />}
                   </div>
                   <div className="space-y-2 p-4">
@@ -117,7 +117,7 @@ export default function Mine() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-2">
-                      <button onClick={() => navigate(`/item/${item.id}`)} className="text-xs font-semibold text-accent underline underline-offset-4">View notice</button>
+                      <button onClick={() => navigate(`/item/${item.id}`)} className="text-xs font-semibold text-clay underline underline-offset-4">View notice</button>
                       <button onClick={() => { setNotice(''); setConfirming(item.id); }} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-danger hover:bg-danger/5">
                         <Icon name="trash" className="h-3.5 w-3.5" /> Delete
                       </button>

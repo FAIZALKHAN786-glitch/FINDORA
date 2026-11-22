@@ -14,6 +14,7 @@ import Select from '../components/Select.jsx';
 import Spinner from '../components/Spinner.jsx';
 
 const CATEGORIES = ['Books', 'Electronics', 'Clothing', 'Keys', 'ID & Documents', 'Bags', 'Other'];
+const TILTS = [-1.2, 0.9, -0.6, 1.1, -0.9, 0.6];
 
 export default function Home() {
   const navigate = useNavigate();
@@ -47,48 +48,62 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-8">
-      <section className="grid items-end gap-6 lg:grid-cols-[1.5fr_1fr]">
+    <div className="space-y-10">
+      <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="animate-rise">
-          <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent">
-            <span className="h-px w-6 bg-accent" /> Campus noticeboard
+          <p className="mb-4 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-clay">
+            <span className="h-px w-7 bg-clay" /> Findora · lost &amp; found
           </p>
-          <h1 className="max-w-2xl text-balance text-4xl font-bold leading-[1.05] tracking-[-0.035em] text-ink sm:text-5xl">
-            Lost something? <span className="text-accent">It might be here.</span>
+          <h1 className="max-w-xl text-balance text-5xl font-extrabold leading-[1.02] tracking-[-0.055em] text-ink sm:text-6xl">
+            It’s here <span className="relative inline-block text-clay">somewhere.<svg viewBox="0 0 240 12" className="absolute -bottom-2 left-0 w-full" aria-hidden="true"><path d="M3 8c55-7 125-8 234-3" fill="none" stroke="currentColor" strokeOpacity=".35" strokeWidth="5" strokeLinecap="round" /></svg></span>
           </h1>
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
-            A small board for the things that slip between lecture halls, library desks and bus stops. Browse what neighbours have found — or post what you have lost.
+          <p className="mt-6 max-w-lg text-base leading-relaxed text-muted">
+            A quiet place for the things that wander off between lecture halls, library desks and bus stops. Browse open notices or pin your own.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap gap-3">
             <Button size="lg" onClick={() => navigate(user ? '/report' : '/login')}>
               <Icon name="plus" className="h-4 w-4" /> Report an item
             </Button>
             {!user && <Button variant="secondary" size="lg" onClick={() => navigate('/login')}>Create an account</Button>}
           </div>
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium text-muted">
+            {['Search the board', 'Contact the poster', 'Close the loop'].map((step, index) => (
+              <span key={step} className="inline-flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full border border-line bg-surface text-[10px] font-bold text-ink">{index + 1}</span>
+                {step}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <Card className="animate-rise p-5 [animation-delay:80ms]">
-          <h2 className="text-sm font-bold tracking-tight text-ink">How the board works</h2>
-          <ol className="mt-4 space-y-3.5">
-            {[
-              ['1', 'Search the board', 'Look by title, location or category.'],
-              ['2', 'Contact the poster', 'Use the email or phone shown on the notice.'],
-              ['3', 'Close the loop', 'The poster marks it claimed when it is back.'],
-            ].map(([step, title, description]) => (
-              <li key={step} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[11px] font-bold text-accent">{step}</span>
-                <span>
-                  <span className="block text-sm font-semibold text-ink">{title}</span>
-                  <span className="block text-xs leading-relaxed text-muted">{description}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        </Card>
+        <div className="relative mx-auto w-full max-w-md animate-rise [animation-delay:80ms]" aria-hidden="true">
+          <div className="absolute -left-5 top-10 h-24 w-24 rounded-full border border-dashed border-line" />
+          <div className="absolute -right-4 -top-5 h-16 w-16 rotate-12 rounded-2xl bg-clay-soft" />
+          <div className="relative rotate-[2deg] rounded-card border border-line bg-surface p-5 shadow-lift paper-grain">
+            <div className="flex items-center justify-between border-b border-dashed border-line pb-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-[13px] font-extrabold text-white">F</span>
+                <span className="text-sm font-extrabold tracking-tight">FOUND</span>
+              </div>
+              <span className="rounded-full border border-clay/20 bg-clay-soft px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-clay">Today</span>
+            </div>
+            <div className="mt-4 h-40 rounded-notice bg-[repeating-linear-gradient(135deg,#e9e7e0,#e9e7e0_10px,#f1efe9_10px,#f1efe9_20px)]" />
+            <p className="mt-4 text-base font-bold tracking-tight">Blue water bottle</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted">Left on the library desk. Unmistakable dent on the cap.</p>
+            <div className="mt-4 flex items-center gap-2 border-t border-dashed border-line pt-3 text-xs text-muted">
+              <Icon name="pin" className="h-3.5 w-3.5 text-clay" /> Library, 2nd floor
+            </div>
+          </div>
+          <div className="absolute -bottom-7 -left-6 w-44 -rotate-6 rounded-notice border border-line bg-surface p-3 shadow-card">
+            <p className="text-[10px] font-extrabold uppercase tracking-widest text-muted">Lost</p>
+            <p className="mt-1 text-sm font-bold">Campus card</p>
+            <div className="mt-2 h-8 rounded-md bg-paper" />
+          </div>
+        </div>
       </section>
 
-      <Card className="p-4 sm:p-5">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_170px_160px]">
+      <Card className="p-4 paper-grain relative sm:p-5">
+        <div className="relative grid gap-3 sm:grid-cols-[minmax(0,1fr)_170px_160px]">
           <Input
             label="Search"
             aria-label="Search listings"
@@ -111,7 +126,7 @@ export default function Home() {
       </Card>
 
       <section aria-labelledby="results-heading">
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-5 flex items-center justify-between gap-3">
           <h2 id="results-heading" className="text-lg font-bold tracking-tight text-ink" role="status" aria-live="polite">
             {loading ? 'Looking…' : `${items.length} ${items.length === 1 ? 'notice' : 'notices'}`}
           </h2>
@@ -136,14 +151,13 @@ export default function Home() {
             action={<Button onClick={user ? () => navigate('/report') : () => navigate('/login')}>Post a notice</Button>}
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item, index) => (
               <ItemCard
                 key={item.id}
                 item={item}
-                className="[animation-delay:var(--delay)]"
                 onClick={() => navigate(`/item/${item.id}`)}
-                style={{ '--delay': `${Math.min(index, 6) * 35}ms` }}
+                style={{ '--delay': `${Math.min(index, 6) * 35}ms`, '--tilt': `${TILTS[index % TILTS.length]}deg` }}
               />
             ))}
           </div>
@@ -152,7 +166,7 @@ export default function Home() {
 
       {(query || category !== 'all' || status !== 'all') && (
         <p className="text-center text-sm text-muted">
-          <button onClick={clearFilters} className="font-semibold text-accent underline underline-offset-4">Clear all filters</button>
+          <button onClick={clearFilters} className="font-semibold text-clay underline underline-offset-4">Clear all filters</button>
         </p>
       )}
     </div>

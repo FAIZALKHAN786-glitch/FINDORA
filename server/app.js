@@ -19,6 +19,9 @@ const MIME_EXT = {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^\+?[\d\s\-()]{7,20}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_LIMIT = 10;
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('findora-no-such-user', 10);
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -36,7 +39,11 @@ function cookies(req) {
   for (const part of (req.headers.cookie || '').split(';')) {
     const index = part.indexOf('=');
     if (index === -1) continue;
-    result[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
+    try {
+      result[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
+    } catch {
+      result[part.slice(0, index).trim()] = '';
+    }
   }
   return result;
 }
@@ -49,14 +56,38 @@ export function createApp({ store, uploadsDir, sessionTtlMs = SESSION_TTL_MS }) 
 
   const app = express();
   app.disable('x-powered-by');
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    next();
+  });
   app.use(express.json({ limit: '32kb' }));
+
+  const authHits = new Map();
+  const authRateLimit = (req, res, next) => {
+    const now = Date.now();
+    for (const [key, hit] of authHits) if (now >= hit.reset) authHits.delete(key);
+    const key = req.ip || 'unknown';
+    const hit = authHits.get(key);
+    if (!hit) {
+      authHits.set(key, { count: 1, reset: now + AUTH_WINDOW_MS });
+      return next();
+    }
+    if (hit.count >= AUTH_LIMIT) {
+      res.setHeader('Retry-After', Math.ceil((hit.reset - now) / 1000));
+      return res.status(429).json({ error: 'Too many attempts. Try again later.' });
+    }
+    hit.count += 1;
+    next();
+  };
 
   const upload = multer({
     storage: multer.diskStorage({
       destination: uploadsDir,
       filename: (_req, file, callback) => callback(null, `${randomUUID()}.${MIME_EXT[file.mimetype]}`),
     }),
-    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 10, parts: 12 },
     fileFilter: (_req, file, callback) => {
       if (!MIME_EXT[file.mimetype]) return callback(new HttpError(400, 'Only JPG, PNG, WEBP or GIF images are allowed.'));
       callback(null, true);
@@ -68,28 +99,28 @@ export function createApp({ store, uploadsDir, sessionTtlMs = SESSION_TTL_MS }) 
     await store.createSession(hashToken(token), userId, new Date(Date.now() + sessionTtlMs));
     res.cookie(COOKIE, token, {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'strict',
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: sessionTtlMs,
     });
   }
 
-  async function requireAuth(req, _res, next) {
+  const requireAuth = asyncRoute(async (req, _res, next) => {
     const token = cookies(req)[COOKIE];
     if (!token) return next(new HttpError(401, 'Sign in to continue.'));
     const user = await store.findSessionUser(hashToken(token));
     if (!user) return next(new HttpError(401, 'Your session has expired. Sign in again.'));
     req.user = user;
     next();
-  }
+  });
 
-  app.post('/api/auth/signup', asyncRoute(async (req, res) => {
+  app.post('/api/auth/signup', authRateLimit, asyncRoute(async (req, res) => {
     const email = text(req.body?.email).toLowerCase();
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
     const fullName = text(req.body?.fullName);
     if (!EMAIL_RE.test(email)) throw new HttpError(400, 'Enter a valid email address.');
-    if (password.length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
+    if (password.length < 8 || password.length > 128) throw new HttpError(400, 'Password must be 8–128 characters.');
     if (fullName.length < 2 || fullName.length > 80) throw new HttpError(400, 'Name must be 2–80 characters.');
     if (await store.findUserByEmail(email)) throw new HttpError(409, 'An account with that email already exists.');
 
@@ -98,11 +129,12 @@ export function createApp({ store, uploadsDir, sessionTtlMs = SESSION_TTL_MS }) 
     res.status(201).json(publicUser(user));
   }));
 
-  app.post('/api/auth/login', asyncRoute(async (req, res) => {
+  app.post('/api/auth/login', authRateLimit, asyncRoute(async (req, res) => {
     const email = text(req.body?.email).toLowerCase();
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
     const user = await store.findUserByEmail(email);
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    const valid = await bcrypt.compare(password, user?.password_hash || DUMMY_PASSWORD_HASH);
+    if (!user || !valid) {
       throw new HttpError(401, 'Email or password is incorrect.');
     }
     await issueSession(req, res, user.id);

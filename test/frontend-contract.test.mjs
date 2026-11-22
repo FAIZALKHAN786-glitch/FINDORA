@@ -47,3 +47,24 @@ test('design tokens and reduced motion are configured', () => {
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /focus-visible/);
 });
+
+test('the app is branded as Findora', () => {
+  const html = read('index.html');
+  const pkg = JSON.parse(read('package.json'));
+  const logo = read('src/components/Logo.jsx');
+  const app = read('src/App.jsx');
+
+  assert.match(html, /<title>Findora/);
+  assert.equal(pkg.name, 'findora');
+  assert.match(logo, /Findora/);
+  assert.match(app, /Findora/);
+  assert.doesNotMatch(app, /Campus Lost and Found home/);
+});
+
+test('soft paper visual tokens are configured', () => {
+  const tailwind = read('tailwind.config.js');
+  assert.match(tailwind, /clay/);
+  assert.match(tailwind, /paper/);
+  const css = read('src/index.css');
+  assert.match(css, /paper-grain/);
+});

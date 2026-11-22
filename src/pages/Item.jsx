@@ -75,8 +75,8 @@ export default function Item({ id }) {
       </Button>
 
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <Card className="animate-rise overflow-hidden p-0">
-          <div className="flex min-h-[280px] items-center justify-center bg-ink/[0.05] sm:min-h-[420px]">
+        <Card className="animate-rise overflow-hidden p-0 paper-grain">
+          <div className="flex min-h-[280px] items-center justify-center bg-[#eceae4] sm:min-h-[420px]">
             {image
               ? <img src={image} alt={item.title} className="h-full max-h-[520px] w-full object-cover" />
               : <div className="flex flex-col items-center gap-3 py-20 text-ink/25"><Icon name="image" className="h-12 w-12" /><span className="text-sm">No photo attached</span></div>}
@@ -84,7 +84,7 @@ export default function Item({ id }) {
         </Card>
 
         <div className="animate-rise space-y-5 [animation-delay:60ms]">
-          <Card className="p-5 sm:p-6">
+          <Card className="paper-grain relative p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <StatusPill status={item.status} />
               <span className="text-xs text-muted">Posted {formatDate(item.created_at)}</span>
@@ -94,15 +94,15 @@ export default function Item({ id }) {
 
             <dl className="mt-6 grid gap-4 border-y border-line py-5 sm:grid-cols-2">
               <div className="flex gap-3">
-                <Icon name="pin" className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                <Icon name="pin" className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
                 <div><dt className="text-[11px] font-bold uppercase tracking-wider text-muted">Location</dt><dd className="mt-1 text-sm text-ink">{item.location || 'Not listed'}</dd></div>
               </div>
               <div className="flex gap-3">
-                <Icon name="tag" className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                <Icon name="tag" className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
                 <div><dt className="text-[11px] font-bold uppercase tracking-wider text-muted">Category</dt><dd className="mt-1 text-sm text-ink">{item.category}</dd></div>
               </div>
               <div className="flex gap-3 sm:col-span-2">
-                <Icon name="calendar" className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                <Icon name="calendar" className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
                 <div><dt className="text-[11px] font-bold uppercase tracking-wider text-muted">Date</dt><dd className="mt-1 text-sm text-ink">{item.lost_found_date ? formatDate(item.lost_found_date) : 'Not listed'}</dd></div>
               </div>
             </dl>
@@ -118,12 +118,12 @@ export default function Item({ id }) {
             <p className="mt-1 text-xs leading-relaxed text-muted">Contact details are shown only on this notice.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {item.reporter_email && (
-                <a href={`mailto:${item.reporter_email}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-paper px-4 text-sm font-semibold text-ink transition-colors hover:border-accent/40 hover:text-accent">
+                <a href={`mailto:${item.reporter_email}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-paper px-4 text-sm font-semibold text-ink transition-colors hover:border-clay/40 hover:text-clay">
                   <Icon name="mail" className="h-4 w-4" /> Email
                 </a>
               )}
               {item.reporter_phone && (
-                <a href={`tel:${item.reporter_phone}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-paper px-4 text-sm font-semibold text-ink transition-colors hover:border-accent/40 hover:text-accent">
+                <a href={`tel:${item.reporter_phone}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-paper px-4 text-sm font-semibold text-ink transition-colors hover:border-clay/40 hover:text-clay">
                   <Icon name="phone" className="h-4 w-4" /> {item.reporter_phone}
                 </a>
               )}
@@ -131,7 +131,7 @@ export default function Item({ id }) {
           </Card>
 
           {canClaim && (
-            <Card className="border-accent/20 bg-accent-soft/40 p-5">
+            <Card className="border-dashed border-clay/30 bg-clay-soft/50 p-5">
               <h2 className="text-sm font-bold text-ink">Found it?</h2>
               <p className="mt-1 text-xs leading-relaxed text-muted">Marking it claimed removes it from the open board.</p>
               {confirming ? (

@@ -43,8 +43,8 @@ export default function Login() {
   return (
     <div className="mx-auto grid max-w-5xl gap-8 py-6 lg:grid-cols-[1fr_0.9fr] lg:items-center">
       <div className="animate-rise">
-        <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent"><span className="h-px w-6 bg-accent" /> Your account</p>
-        <h1 className="text-balance text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-ink sm:text-5xl">
+        <p className="mb-3 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-clay"><span className="h-px w-6 bg-clay" /> Your account</p>
+        <h1 className="text-balance text-5xl font-extrabold leading-[1.05] tracking-[-0.05em] text-ink sm:text-6xl">
           {mode === 'signin' ? 'Welcome back.' : 'Join the board.'}
         </h1>
         <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
@@ -59,8 +59,8 @@ export default function Login() {
         </div>
       </div>
 
-      <Card className="animate-rise p-6 sm:p-7 [animation-delay:60ms]">
-        <div className="mb-5 flex rounded-xl bg-paper p-1" role="tablist" aria-label="Account mode">
+      <Card className="paper-grain relative animate-rise p-6 sm:p-7 [animation-delay:60ms]">
+        <div className="relative mb-5 flex rounded-xl border border-line bg-paper p-1" role="tablist" aria-label="Account mode">
           {[
             ['signin', 'Sign in'],
             ['signup', 'Create account'],
@@ -96,7 +96,7 @@ export default function Login() {
 
         <p className="mt-5 text-center text-xs leading-relaxed text-muted">
           {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-          <button onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')} className="font-semibold text-accent underline underline-offset-4">
+          <button onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')} className="font-semibold text-clay underline underline-offset-4">
             {mode === 'signin' ? 'Sign up' : 'Sign in'}
           </button>
         </p>

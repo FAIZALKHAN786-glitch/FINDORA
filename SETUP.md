@@ -1,4 +1,4 @@
-# Campus Lost & Found — setup
+# Findora — setup
 
 Everything runs on your machine. The browser talks only to the local Express API, and the API talks only to a local Postgres container. No cloud account, hosted database or public URL is needed.
 
