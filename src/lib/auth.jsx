@@ -9,8 +9,8 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true;
-    api.me()
-      .then((current) => active && setUser(current))
+    api.session()
+      .then(({ user: current }) => active && setUser(current))
       .catch(() => active && setUser(null))
       .finally(() => active && setReady(true));
     return () => { active = false; };

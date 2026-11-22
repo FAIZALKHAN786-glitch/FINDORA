@@ -75,6 +75,9 @@ test('auth, items, upload and owner-only mutations work end to end', async (t) =
     await rm(uploadsDir, { recursive: true, force: true });
   });
 
+  const anonymousSession = await (await call(base, '/api/auth/session')).json();
+  assert.equal(anonymousSession.user, null);
+
   const signup = await call(base, '/api/auth/signup', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -88,6 +91,9 @@ test('auth, items, upload and owner-only mutations work end to end', async (t) =
 
   const me = await call(base, '/api/auth/me', { headers: { cookie: ownerCookie } });
   assert.equal(me.status, 200);
+
+  const authedSession = await (await call(base, '/api/auth/session', { headers: { cookie: ownerCookie } })).json();
+  assert.equal(authedSession.user.id, owner.id);
 
   const wrongLogin = await call(base, '/api/auth/login', {
     method: 'POST',

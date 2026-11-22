@@ -3,5 +3,7 @@
 node_modules/
 dist/
 build/
+uploads/
+.playwright-cli/
 *.log
 .DS_Store

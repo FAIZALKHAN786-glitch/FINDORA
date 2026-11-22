@@ -18,6 +18,7 @@ async function request(path, { json, body, headers, ...options } = {}) {
 
 export const api = {
   me: () => request('/api/auth/me'),
+  session: () => request('/api/auth/session'),
   signup: (values) => request('/api/auth/signup', { method: 'POST', json: values }),
   login: (values) => request('/api/auth/login', { method: 'POST', json: values }),
   logout: () => request('/api/auth/logout', { method: 'POST' }),

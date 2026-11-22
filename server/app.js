@@ -116,6 +116,12 @@ export function createApp({ store, uploadsDir, sessionTtlMs = SESSION_TTL_MS }) 
     res.status(204).end();
   }));
 
+  app.get('/api/auth/session', asyncRoute(async (req, res) => {
+    const token = cookies(req)[COOKIE];
+    const user = token ? await store.findSessionUser(hashToken(token)) : null;
+    res.json({ user: user ? publicUser(user) : null });
+  }));
+
   app.get('/api/auth/me', requireAuth, (req, res) => res.json(publicUser(req.user)));
 
   app.get('/api/items', asyncRoute(async (req, res) => {
