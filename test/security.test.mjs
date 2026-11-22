@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 const { createApp } = await import('../server/app.js');
 
@@ -75,4 +76,9 @@ test('auth endpoints are rate limited', async (t) => {
     assert.match((await limited.json()).error, /too many attempts/i);
     assert.ok(Number(limited.headers.get('retry-after')) > 0);
   });
+});
+
+test('API server binds loopback only', () => {
+  const src = readFileSync(resolve(import.meta.dirname, '../server/index.js'), 'utf8');
+  assert.match(src, /app\.listen\(port,\s*'127\.0\.0\.1'/);
 });
