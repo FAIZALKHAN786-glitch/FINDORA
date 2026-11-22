@@ -8,7 +8,6 @@ export function useVisibilityRefresh(load, interval = 15000) {
     const tick = () => {
       if (document.visibilityState === 'visible') latest.current();
     };
-    tick();
     const timer = window.setInterval(tick, interval);
     document.addEventListener('visibilitychange', tick);
     return () => {
