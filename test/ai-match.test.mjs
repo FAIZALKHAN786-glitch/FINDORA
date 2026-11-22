@@ -1,9 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { createStore } from '../server/store.js';
 import { buildItemText, cosine, matchReasons, rankMatches } from '../server/match.js';
+
+const { createApp } = await import('../server/app.js');
 
 const root = resolve(import.meta.dirname, '..');
 const read = (path) => readFileSync(resolve(root, path), 'utf8');
@@ -109,4 +113,87 @@ test('rankMatches returns at most five matches', () => {
   }));
   const matches = rankMatches(rows, [1, 0], { query: 'campus card', model: 'findora-minilm-v1' });
   assert.equal(matches.length, 5);
+});
+
+function aiFakeStore() {
+  const items = [
+    { id: '1', title: 'Near', category: 'Bags', status: 'lost', embedding: [1, 0], model: 'fake-model-v1' },
+    { id: '2', title: 'Far', category: 'Books', status: 'lost', embedding: [0.5, Math.sqrt(0.75)], model: 'fake-model-v1' },
+  ];
+  return {
+    listMatchCandidates: async () => items,
+    insertItem: async (data, embedding) => ({ ...data, id: 'new', embedding }),
+  };
+}
+
+async function startAiApp(t, embedder = { model: 'fake-model-v1', embed: async () => [1, 0] }) {
+  const uploadsDir = await mkdtemp(join(tmpdir(), 'findora-ai-'));
+  const app = createApp({ store: aiFakeStore(), uploadsDir, embedder });
+  const server = app.listen(0);
+  await new Promise((resolve) => server.once('listening', resolve));
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    await rm(uploadsDir, { recursive: true, force: true });
+  });
+  return `http://127.0.0.1:${server.address().port}`;
+}
+
+const matchRequest = (base, query) => fetch(`${base}/api/ai/match`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ query }),
+});
+
+test('AI match validates query length', async (t) => {
+  const base = await startAiApp(t);
+  assert.equal((await matchRequest(base, 'ab')).status, 400);
+  assert.equal((await matchRequest(base, 'a'.repeat(301))).status, 400);
+});
+
+test('AI match returns ranked candidates without embedding data', async (t) => {
+  const base = await startAiApp(t);
+  const response = await matchRequest(base, 'black bag');
+  assert.equal(response.status, 200);
+  const { matches } = await response.json();
+  assert.deepEqual(matches.map((match) => match.item.id), ['1', '2']);
+  assert.equal('embedding' in matches[0].item, false);
+});
+
+test('AI match is rate limited at 30 requests per 15 minutes', async (t) => {
+  const base = await startAiApp(t);
+  for (let i = 0; i < 30; i += 1) assert.equal((await matchRequest(base, 'black bag')).status, 200);
+  const limited = await matchRequest(base, 'black bag');
+  assert.equal(limited.status, 429);
+  assert.ok(Number(limited.headers.get('retry-after')) > 0);
+});
+
+test('reporting an item passes the generated embedding to the store', async (t) => {
+  const uploadsDir = await mkdtemp(join(tmpdir(), 'findora-ai-create-'));
+  const store = {
+    ...aiFakeStore(),
+    findUserByEmail: async () => null,
+    createUser: async ({ email, fullName, passwordHash }) => ({ id: '1', email, full_name: fullName, password_hash: passwordHash }),
+    createSession: async () => {},
+    findSessionUser: async () => ({ id: '1', email: 'owner@example.edu', full_name: 'Owner' }),
+    deleteSession: async () => {},
+  };
+  const app = createApp({ store, uploadsDir, embedder: { model: 'fake-model-v1', embed: async () => [0.4, 0.9] } });
+  const server = app.listen(0);
+  await new Promise((resolve) => server.once('listening', resolve));
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    await rm(uploadsDir, { recursive: true, force: true });
+  });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const form = new FormData();
+  form.set('title', 'Black backpack');
+  form.set('category', 'Bags');
+  form.set('status', 'found');
+  const response = await fetch(`${base}/api/items`, {
+    method: 'POST',
+    headers: { cookie: 'lf_session=fake' },
+    body: form,
+  });
+  assert.equal(response.status, 201);
+  assert.deepEqual((await response.json()).embedding, { model: 'fake-model-v1', vector: [0.4, 0.9] });
 });

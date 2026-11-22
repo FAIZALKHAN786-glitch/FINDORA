@@ -5,6 +5,8 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { unlink } from 'node:fs/promises';
+import { createEmbedder } from './embedder.js';
+import { buildItemText, rankMatches } from './match.js';
 
 const COOKIE = 'lf_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -21,6 +23,8 @@ const PHONE_RE = /^\+?[\d\s\-()]{7,20}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const AUTH_WINDOW_MS = 15 * 60 * 1000;
 const AUTH_LIMIT = 10;
+const AI_WINDOW_MS = 15 * 60 * 1000;
+const AI_LIMIT = 30;
 const DUMMY_PASSWORD_HASH = bcrypt.hashSync('findora-no-such-user', 10);
 
 class HttpError extends Error {
@@ -50,7 +54,27 @@ function cookies(req) {
 
 const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-export function createApp({ store, uploadsDir, sessionTtlMs = SESSION_TTL_MS }) {
+function createRateLimit({ windowMs, limit, message }) {
+  const hits = new Map();
+  return (req, res, next) => {
+    const now = Date.now();
+    for (const [key, hit] of hits) if (now >= hit.reset) hits.delete(key);
+    const key = req.ip || 'unknown';
+    const hit = hits.get(key);
+    if (!hit) {
+      hits.set(key, { count: 1, reset: now + windowMs });
+      return next();
+    }
+    if (hit.count >= limit) {
+      res.setHeader('Retry-After', Math.ceil((hit.reset - now) / 1000));
+      return res.status(429).json({ error: message });
+    }
+    hit.count += 1;
+    next();
+  };
+}
+
+export function createApp({ store, uploadsDir, embedder = createEmbedder(), sessionTtlMs = SESSION_TTL_MS }) {
   if (!store) throw new Error('createApp requires a store');
   mkdirSync(uploadsDir, { recursive: true });
 
@@ -64,23 +88,16 @@ export function createApp({ store, uploadsDir, sessionTtlMs = SESSION_TTL_MS }) 
   });
   app.use(express.json({ limit: '32kb' }));
 
-  const authHits = new Map();
-  const authRateLimit = (req, res, next) => {
-    const now = Date.now();
-    for (const [key, hit] of authHits) if (now >= hit.reset) authHits.delete(key);
-    const key = req.ip || 'unknown';
-    const hit = authHits.get(key);
-    if (!hit) {
-      authHits.set(key, { count: 1, reset: now + AUTH_WINDOW_MS });
-      return next();
-    }
-    if (hit.count >= AUTH_LIMIT) {
-      res.setHeader('Retry-After', Math.ceil((hit.reset - now) / 1000));
-      return res.status(429).json({ error: 'Too many attempts. Try again later.' });
-    }
-    hit.count += 1;
-    next();
-  };
+  const authRateLimit = createRateLimit({
+    windowMs: AUTH_WINDOW_MS,
+    limit: AUTH_LIMIT,
+    message: 'Too many attempts. Try again later.',
+  });
+  const aiRateLimit = createRateLimit({
+    windowMs: AI_WINDOW_MS,
+    limit: AI_LIMIT,
+    message: 'Too many searches. Try again later.',
+  });
 
   const upload = multer({
     storage: multer.diskStorage({
@@ -156,6 +173,14 @@ export function createApp({ store, uploadsDir, sessionTtlMs = SESSION_TTL_MS }) 
 
   app.get('/api/auth/me', requireAuth, (req, res) => res.json(publicUser(req.user)));
 
+  app.post('/api/ai/match', aiRateLimit, asyncRoute(async (req, res) => {
+    const query = text(req.body?.query);
+    if (query.length < 3 || query.length > 300) throw new HttpError(400, 'Describe the item in 3–300 characters.');
+    const vector = await embedder.embed(query);
+    const rows = await store.listMatchCandidates(embedder.model);
+    res.json({ matches: rankMatches(rows, vector, { query, model: embedder.model }) });
+  }));
+
   app.get('/api/items', asyncRoute(async (req, res) => {
     const q = text(req.query.q).slice(0, 120);
     const category = text(req.query.category);
@@ -194,7 +219,8 @@ export function createApp({ store, uploadsDir, sessionTtlMs = SESSION_TTL_MS }) 
       throw new HttpError(400, 'Enter a valid date.');
     }
     if (data.reporter_phone && !PHONE_RE.test(data.reporter_phone)) throw new HttpError(400, 'Enter a valid phone number.');
-    res.status(201).json(await store.insertItem(data));
+    const embedding = { model: embedder.model, vector: await embedder.embed(buildItemText(data)) };
+    res.status(201).json(await store.insertItem(data, embedding));
   }));
 
   app.patch('/api/items/:id/claim', requireAuth, asyncRoute(async (req, res) => {

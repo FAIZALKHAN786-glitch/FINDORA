@@ -38,8 +38,8 @@ function fakeStore() {
         return true;
       });
     },
-    async insertItem(data) {
-      const item = { id: nextId(), ...data, created_at: new Date().toISOString() };
+    async insertItem(data, embedding) {
+      const item = { id: nextId(), ...data, ...embedding, created_at: new Date().toISOString() };
       items.push(item);
       return item;
     },
@@ -56,8 +56,8 @@ function fakeStore() {
   };
 }
 
-async function start(store, uploadsDir) {
-  const app = createApp({ store, uploadsDir });
+async function start(store, uploadsDir, embedder = { model: 'fake-model-v1', embed: async () => [1, 0] }) {
+  const app = createApp({ store, uploadsDir, embedder });
   const server = app.listen(0);
   await new Promise((resolve) => server.once('listening', resolve));
   return { server, base: `http://127.0.0.1:${server.address().port}` };
