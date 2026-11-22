@@ -9,7 +9,8 @@ let extractorPromise;
 async function getExtractor() {
   if (!extractorPromise) {
     console.log('Loading local AI model (first run downloads model files).');
-    extractorPromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { dtype: 'q8' });
+    extractorPromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { dtype: 'q8' })
+      .catch((err) => { extractorPromise = undefined; throw err; });
   }
   return extractorPromise;
 }
