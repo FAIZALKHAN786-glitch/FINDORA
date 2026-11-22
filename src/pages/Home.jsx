@@ -107,7 +107,7 @@ export default function Home() {
 
         <div className="relative mx-auto w-full max-w-md animate-rise [animation-delay:80ms]" aria-hidden="true">
           <div className="absolute -left-5 top-10 h-24 w-24 rounded-full border border-dashed border-line" />
-          <div className="absolute -right-4 -top-5 h-16 w-16 rotate-12 rounded-2xl bg-clay-soft" />
+          <div className="absolute right-0 -top-5 h-16 w-16 rotate-12 rounded-2xl bg-clay-soft" />
           <div className="relative rotate-[2deg] rounded-card border border-line bg-surface p-5 shadow-lift paper-grain">
             <div className="flex items-center justify-between border-b border-dashed border-line pb-4">
               <div className="flex items-center gap-2">
