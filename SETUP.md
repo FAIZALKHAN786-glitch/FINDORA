@@ -19,6 +19,8 @@ docker info
 npm install
 ```
 
+The first AI match or index run downloads the local model into `.cache/findora-models`; later runs are offline.
+
 ## 3. Configure the environment (optional)
 
 The defaults in `.env.example` already match `docker-compose.yml`, so you can skip this step. If you want explicit values:
