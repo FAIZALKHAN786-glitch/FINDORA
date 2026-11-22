@@ -53,7 +53,7 @@ This applies `db/schema.sql` and `db/seed.sql`. The schema is idempotent; the se
 npm run ai:index
 ```
 
-This creates a local embedding vector for every item that has none for the current model — the demo notices after a fresh seed, and any items added while the index was missing. The first run downloads the local model into `.cache/findora-models` and can take a few minutes; later runs are offline and only index new or changed rows.
+This creates a local embedding vector for every item that has none for the current model — the demo notices after a fresh seed, rows brought back by a restored database dump, and any items added while the index was missing. The first run downloads the local model into `.cache/findora-models` and can take a few minutes; later runs are offline and only index new or changed rows.
 
 ## 7. Run the app
 

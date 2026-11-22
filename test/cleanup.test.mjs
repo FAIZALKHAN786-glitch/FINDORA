@@ -16,6 +16,8 @@ test('setup documents the local Docker workflow', () => {
   const setup = read('SETUP.md');
   assert.match(setup, /docker compose up -d/);
   assert.match(setup, /npm run db:init/);
+  assert.match(setup, /npm run ai:index/);
+  assert.match(setup, /restored/i);
   assert.match(setup, /localhost:3000/);
   assert.match(setup, /npm test/);
 });
