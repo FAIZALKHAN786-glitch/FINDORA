@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createStore } from '../server/store.js';
+import { buildItemText, cosine, matchReasons, rankMatches } from '../server/match.js';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (path) => readFileSync(resolve(root, path), 'utf8');
@@ -57,4 +58,55 @@ test('insertItem rolls back when embedding insert fails', async () => {
     /embedding failed/,
   );
   assert.deepEqual(calls, ['begin', 'insert', 'insert', 'rollback']);
+});
+
+test('buildItemText uses title, description, category, location and date', () => {
+  const text = buildItemText({
+    title: 'Campus ID card',
+    description: 'Blue student ID',
+    category: 'ID & Documents',
+    location: 'Cafeteria, Building A',
+    lost_found_date: '2026-11-10',
+  });
+  assert.equal(text, 'Campus ID card. Blue student ID. Category: ID & Documents. Location: Cafeteria, Building A. Date: 2026-11-10');
+});
+
+test('cosine ranks aligned vectors above orthogonal vectors and skips stale models', () => {
+  const rows = [
+    { id: 'stale', model: 'old-model', embedding: [1, 0] },
+    { id: 'far', model: 'findora-minilm-v1', embedding: [0, 1] },
+    { id: 'near', model: 'findora-minilm-v1', embedding: [0.9, Math.sqrt(0.19)] },
+  ];
+  const matches = rankMatches(rows, [1, 0], { query: 'campus id', model: 'findora-minilm-v1' });
+  assert.deepEqual(matches.map((match) => match.item.id), ['near']);
+  assert.ok(matches[0].score > 0.8);
+  assert.equal('embedding' in matches[0].item, false);
+});
+
+test('matchReasons describes category, location, date and description overlap', () => {
+  const reasons = matchReasons({
+    title: 'Campus ID card',
+    description: 'Blue student ID',
+    category: 'ID & Documents',
+    location: 'Cafeteria, Building A',
+    lost_found_date: '2026-11-10',
+  }, 'campus id card cafeteria documents Tuesday');
+  assert.ok(reasons.includes('similar category: ID & Documents'));
+  assert.ok(reasons.includes('mentions Cafeteria, Building A'));
+  assert.ok(reasons.includes('date matches'));
+  assert.ok(reasons.includes('description overlap'));
+});
+
+test('cosine returns zero for a zero vector', () => {
+  assert.equal(cosine([0, 0], [1, 1]), 0);
+});
+
+test('rankMatches returns at most five matches', () => {
+  const rows = Array.from({ length: 8 }, (_, index) => ({
+    id: String(index),
+    model: 'findora-minilm-v1',
+    embedding: [1, index / 100],
+  }));
+  const matches = rankMatches(rows, [1, 0], { query: 'campus card', model: 'findora-minilm-v1' });
+  assert.equal(matches.length, 5);
 });
