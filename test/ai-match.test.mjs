@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createStore } from '../server/store.js';
 import { buildItemText, cosine, matchReasons, rankMatches } from '../server/match.js';
+import { runBackfill } from '../scripts/ai-backfill.mjs';
 
 const { createApp } = await import('../server/app.js');
 
@@ -196,4 +197,25 @@ test('reporting an item passes the generated embedding to the store', async (t) 
   });
   assert.equal(response.status, 201);
   assert.deepEqual((await response.json()).embedding, { model: 'fake-model-v1', vector: [0.4, 0.9] });
+});
+
+test('backfill embeds only rows needing a current vector', async () => {
+  const embedded = [];
+  const upserted = [];
+  const result = await runBackfill({
+    store: {
+      listItemsNeedingEmbedding: async (model) => {
+        assert.equal(model, 'findora-minilm-v1');
+        return [{ id: '1', title: 'Campus ID card', location: 'Cafeteria' }];
+      },
+      upsertEmbedding: async (...args) => upserted.push(args),
+    },
+    embedder: {
+      model: 'findora-minilm-v1',
+      embed: async (text) => { embedded.push(text); return [1, 0]; },
+    },
+  });
+  assert.deepEqual(result, { indexed: 1 });
+  assert.match(embedded[0], /Campus ID card/);
+  assert.deepEqual(upserted, [['1', { model: 'findora-minilm-v1', vector: [1, 0] }]]);
 });

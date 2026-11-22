@@ -47,7 +47,15 @@ npm run db:init
 
 This applies `db/schema.sql` and `db/seed.sql`. The schema is idempotent; the seed inserts the five demo notices. To start completely fresh, run `docker compose down -v`, then repeat steps 4 and 5.
 
-## 6. Run the app
+## 6. Index items for AI matching
+
+```powershell
+npm run ai:index
+```
+
+This creates a local embedding vector for every item that has none for the current model — the demo notices after a fresh seed, and any items added while the index was missing. The first run downloads the local model into `.cache/findora-models` and can take a few minutes; later runs are offline and only index new or changed rows.
+
+## 7. Run the app
 
 ```powershell
 npm run dev
@@ -73,13 +81,14 @@ npm run build   # production bundle
 - **Report**: post an item with title, category, location, date, description, optional phone and optional photo.
 - **Item detail**: one-tap email/phone contact; the poster can mark an open item claimed.
 - **My items**: see your notices, open them, or delete them with an inline confirmation.
+- **AI matching**: `POST /api/ai/match` ranks stored notices against a free-text description with a local sentence-embedding model — no API key and no external service at runtime.
 
 ## Notes and limits
 
 - No email is sent. Contact links open the visitor's own mail/phone app.
 - Photo uploads are limited to JPG, PNG, WEBP or GIF, up to 5 MB.
 - Sessions last seven days and are stored as hashes in the database.
-- This is an localhost-only MVP: no public deployment, no admin panel, no realtime socket and no AI matching.
+- This is an localhost-only MVP: no public deployment, no admin panel and no realtime socket.
 
 ## Troubleshooting
 
