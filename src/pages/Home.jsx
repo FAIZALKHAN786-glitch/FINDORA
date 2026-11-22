@@ -15,6 +15,7 @@ import Spinner from '../components/Spinner.jsx';
 
 const CATEGORIES = ['Books', 'Electronics', 'Clothing', 'Keys', 'ID & Documents', 'Bags', 'Other'];
 const TILTS = [-1.2, 0.9, -0.6, 1.1, -0.9, 0.6];
+const AI_EXAMPLES = ['Black backpack, bus stop', 'Campus ID, Tuesday', 'Earbuds, library'];
 
 export default function Home() {
   const navigate = useNavigate();
@@ -25,6 +26,11 @@ export default function Home() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiMatches, setAiMatches] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [aiSearched, setAiSearched] = useState(false);
   const debouncedQuery = useDebouncedValue(query);
 
   const load = useCallback(async () => {
@@ -45,6 +51,29 @@ export default function Home() {
     setQuery('');
     setCategory('all');
     setStatus('all');
+  };
+
+  const findMatches = async () => {
+    setAiError('');
+    setAiMatches([]);
+    setAiSearched(true);
+    setAiLoading(true);
+    try {
+      const { matches } = await api.matchItems(aiQuery);
+      setAiMatches(matches);
+    } catch (cause) {
+      setAiError(cause.message);
+      setAiSearched(false);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const browseAll = () => {
+    setAiQuery('');
+    setAiMatches([]);
+    setAiError('');
+    setAiSearched(false);
   };
 
   return (
@@ -101,6 +130,90 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <Card className="p-4 paper-grain relative sm:p-5" role="region" aria-labelledby="ask-findora-heading">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 id="ask-findora-heading" className="text-lg font-bold tracking-tight text-ink">Ask Findora</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">
+              Describe what you lost in your own words. AI suggestions are possible matches only — please confirm with the poster before relying on them.
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={browseAll} disabled={aiLoading}>Browse all</Button>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <Input
+            label="Describe what you lost"
+            placeholder="Black backpack, bus stop, Tuesday…"
+            maxLength={300}
+            autoComplete="off"
+            value={aiQuery}
+            onChange={(event) => setAiQuery(event.target.value)}
+          />
+          <Button onClick={findMatches} disabled={aiLoading}>
+            <Icon name="search" className="h-4 w-4" /> Find matches
+          </Button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
+          <span className="font-semibold">Try:</span>
+          {AI_EXAMPLES.map((example) => (
+            <Button key={example} variant="secondary" size="sm" onClick={() => setAiQuery(example)}>{example}</Button>
+          ))}
+        </div>
+
+        {aiError && (
+          <div role="alert" className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-danger/25 bg-danger/5 px-4 py-3 text-sm text-danger">
+            <span>{aiError}</span>
+            <Button variant="danger" size="sm" onClick={findMatches}>Try again</Button>
+          </div>
+        )}
+      </Card>
+
+      {aiSearched && (
+        <section aria-labelledby="ai-results-heading">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <h2 id="ai-results-heading" role="status" aria-live="polite" className="text-lg font-bold tracking-tight text-ink">
+              {aiLoading ? 'Looking for possible matches…' : 'Possible matches'}
+            </h2>
+            {!aiLoading && aiMatches.length > 0 && (
+              <p className="text-xs text-muted">
+                {aiMatches.length} AI suggestion{aiMatches.length === 1 ? '' : 's'} — confirm before contacting.
+              </p>
+            )}
+          </div>
+
+          {aiLoading ? (
+            <div className="py-10 text-center"><Spinner label="Looking for possible matches" /></div>
+          ) : aiMatches.length === 0 ? (
+            <EmptyState
+              title="No possible matches yet"
+              description="Try different details — what it looks like, where you last had it, or the day it went missing. You can still browse every notice below."
+              action={<Button variant="secondary" onClick={browseAll}>Browse all</Button>}
+            />
+          ) : (
+            <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+              {aiMatches.map(({ item, score, reasons }, index) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => navigate(`/item/${item.id}`)}
+                  style={{ '--delay': `${Math.min(index, 6) * 35}ms`, '--tilt': `${TILTS[index % TILTS.length]}deg` }}
+                  footer={(
+                    <div className="space-y-1 pt-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-clay">{Math.round(score * 100)}% similar</p>
+                      <ul className="space-y-1">
+                        {reasons.map((reason, reasonIndex) => <li key={reasonIndex} className="text-xs leading-relaxed text-muted">{reason}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <Card className="p-4 paper-grain relative sm:p-5">
         <div className="relative grid gap-3 sm:grid-cols-[minmax(0,1fr)_170px_160px]">

@@ -15,6 +15,14 @@ test('home has search, filters, refresh and accessible item cards', () => {
   assert.match(home, /label="Search"/);
 });
 
+test('home offers local AI matching alongside normal filters', () => {
+  const home = page('Home');
+  for (const text of ['Ask Findora', 'api.matchItems', 'Possible matches', 'AI suggestions', 'Browse all']) {
+    assert.ok(home.includes(text), `Home must include ${text}`);
+  }
+  assert.doesNotMatch(home, /found your item/i);
+});
+
 test('report submits multipart data with an optional photo', () => {
   const report = page('Report');
   assert.match(report, /type="file"/);

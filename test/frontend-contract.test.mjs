@@ -16,7 +16,7 @@ test('frontend no longer imports Supabase', () => {
 test('API client talks only to the local API with cookies', () => {
   const api = read('src/lib/api.js');
   assert.match(api, /credentials:\s*['"]include['"]/);
-  for (const route of ['/api/auth/me', '/api/auth/signup', '/api/auth/login', '/api/auth/logout', '/api/items']) {
+  for (const route of ['/api/auth/me', '/api/auth/signup', '/api/auth/login', '/api/auth/logout', '/api/items', '/api/ai/match']) {
     assert.match(api, new RegExp(route.replace('/', '\\/')));
   }
   assert.match(api, /FormData/);

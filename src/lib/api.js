@@ -34,6 +34,7 @@ export const api = {
   createItem: (values) => request('/api/items', { method: 'POST', body: toFormData(values) }),
   claimItem: (id) => request(`/api/items/${encodeURIComponent(id)}/claim`, { method: 'PATCH' }),
   deleteItem: (id) => request(`/api/items/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  matchItems: (query) => request('/api/ai/match', { method: 'POST', json: { query } }),
 };
 
 export function toFormData(values) {
