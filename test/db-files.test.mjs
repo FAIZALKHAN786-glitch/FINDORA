@@ -23,6 +23,10 @@ test('schema defines users, sessions, items and the allowed statuses', () => {
   }
   assert.match(schema, /REFERENCES users/i);
   assert.match(schema, /CREATE INDEX/i);
+  assert.match(schema, /CREATE TABLE IF NOT EXISTS item_embeddings/i);
+  assert.match(schema, /item_id uuid primary key references items\(id\) on delete cascade/i);
+  assert.match(schema, /model text not null/i);
+  assert.match(schema, /embedding jsonb not null/i);
 });
 
 test('seed contains the five authoritative demo rows and no reporters', () => {

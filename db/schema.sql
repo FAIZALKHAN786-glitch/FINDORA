@@ -34,3 +34,12 @@ create table if not exists items (
 create index if not exists items_created_at_idx on items (created_at desc);
 create index if not exists items_reporter_id_idx on items (reporter_id);
 create index if not exists items_status_category_idx on items (status, category);
+
+create table if not exists item_embeddings (
+  item_id uuid primary key references items(id) on delete cascade,
+  model text not null,
+  embedding jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists item_embeddings_model_idx on item_embeddings (model);
