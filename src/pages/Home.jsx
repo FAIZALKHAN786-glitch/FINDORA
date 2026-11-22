@@ -172,9 +172,9 @@ export default function Home() {
       </Card>
 
       {aiSearched && (
-        <section aria-labelledby="ai-results-heading">
+        <section aria-labelledby="ai-results-heading" aria-live="polite">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h2 id="ai-results-heading" role="status" aria-live="polite" className="text-lg font-bold tracking-tight text-ink">
+            <h2 id="ai-results-heading" className="text-lg font-bold tracking-tight text-ink">
               {aiLoading ? 'Looking for possible matches…' : 'Possible matches'}
             </h2>
             {!aiLoading && aiMatches.length > 0 && (

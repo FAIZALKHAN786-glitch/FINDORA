@@ -23,6 +23,13 @@ test('home offers local AI matching alongside normal filters', () => {
   assert.doesNotMatch(home, /found your item/i);
 });
 
+test('AI results heading stays a heading and its section is a polite live region', () => {
+  const home = page('Home');
+  const heading = home.match(/<h2 id="ai-results-heading"[^>]*>/)[0];
+  assert.doesNotMatch(heading, /role="status"/);
+  assert.match(home, /<section aria-labelledby="ai-results-heading" aria-live="polite">/);
+});
+
 test('report submits multipart data with an optional photo', () => {
   const report = page('Report');
   assert.match(report, /type="file"/);
