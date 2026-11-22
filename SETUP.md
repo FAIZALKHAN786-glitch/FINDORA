@@ -17,7 +17,7 @@ In the Supabase Dashboard > SQL Editor, paste and run the contents of:
 - `supabase/migrations/0001_initial_schema.sql`
 - `supabase/seed.sql`
 
-This creates `profiles`, `items`, the `item-photos` storage bucket, and row-level security policies, plus seed data.
+This creates `items`, the `item-photos` storage bucket, and row-level security policies, plus seed data.
 
 ## 4. Run the app
 ```powershell
@@ -28,6 +28,6 @@ npm run dev   # http://localhost:3000
 ## What works
 - **Home**: browse lost/found items with search + category filter
 - **Report**: sign in, then post an item with title, location, date, category, optional photo and phone
-- **Item detail**: one-tap email/phone contact, mark-as-returned (owner only)
+- **Item detail**: one-tap email/phone contact, mark your lost item as claimed
 - **My items**: your listings, with delete
 - **Auth**: sign in / sign up (email confirmation is off for speed)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 export const supabase = createClient(
@@ -17,23 +17,6 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const PHONE_RE = /^\+?[\d\s\-()]{7,20}$/;
 
-const hfEmbedding = async (text) => {
-  const key = import.meta.env.VITE_HF_API_KEY;
-  if (!key) throw new Error('AI matches are not configured.');
-  const r = await fetch('https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2', {
-    method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ inputs: text.slice(0, 512) })
-  });
-  if (!r.ok) throw new Error('AI service unavailable.');
-  return await r.json();
-};
-const cosine = (a, b) => {
-  const dot = a.reduce((s, v, i) => s + v * b[i], 0);
-  const na = Math.sqrt(a.reduce((s, v) => s + v * v, 0));
-  const nb = Math.sqrt(b.reduce((s, v) => s + v * v, 0));
-  return na && nb ? dot / (na * nb) : 0;
-};
-
 export default function App() {
   const [session, setSession] = useState(null);
   const [route, setRoute] = useState(window.location.pathname);
@@ -43,9 +26,8 @@ export default function App() {
     const onPop = () => setRoute(window.location.pathname);
     window.addEventListener('popstate', onPop);
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const ch = supabase.channel('items').on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => setRoute(window.location.pathname)).subscribe();
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    return () => { window.removeEventListener('popstate', onPop); supabase.removeChannel(ch); sub.subscription.unsubscribe(); };
+    return () => { window.removeEventListener('popstate', onPop); sub.subscription.unsubscribe(); };
   }, []);
 
   const Page =
@@ -84,8 +66,8 @@ export default function App() {
 function useItems() {
   const [items, setItems] = useState([]);
   useEffect(() => {
-    supabase.from('items').select('*, profiles(full_name)').order('created_at', { ascending: false }).then(({ data }) => setItems(data || []));
-    const ch = supabase.channel('items-live').on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => supabase.from('items').select('*, profiles(full_name)').order('created_at', { ascending: false }).then(({ data }) => setItems(data || []))).subscribe();
+    supabase.from('items').select('*').order('created_at', { ascending: false }).then(({ data }) => setItems(data || []));
+    const ch = supabase.channel('items-live').on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => supabase.from('items').select('*').order('created_at', { ascending: false }).then(({ data }) => setItems(data || []))).subscribe();
     return () => supabase.removeChannel(ch);
   }, []);
   return items;
@@ -103,7 +85,7 @@ function Home({ navigate, session }) {
   const [q, setQ] = useState('');
   const [f, setF] = useState('all');
   const cats = ['Books', 'Electronics', 'Clothing', 'Keys', 'ID & Documents', 'Bags', 'Other'];
-  const fl = items.filter(i => (f === 'all' || i.category === f) && (i.title + ' ' + (i.description || '') + ' ' + (i.location || '')).toLowerCase().includes(q.toLowerCase()) && (f === 'returned' ? i.status === 'returned' : f === 'claimed' ? i.status === 'claimed' : i.status === f));
+  const fl = items.filter(i => (f === 'all' || i.category === f || i.status === f) && (i.title + ' ' + (i.description || '') + ' ' + (i.location || '')).toLowerCase().includes(q.toLowerCase()));
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -153,7 +135,6 @@ function Report({ navigate, session }) {
   const [l, setL] = useState('');
   const [dt, setDt] = useState(new Date().toISOString().slice(0, 10));
   const [p, setP] = useState('');
-  const [pl, setPl] = useState('');
   const [up, setUp] = useState(false);
 
   const sub = async (e) => {
@@ -176,8 +157,7 @@ function Report({ navigate, session }) {
       if (eu) { setUp(false); return alert('Upload failed.'); }
       photo = nm;
     }
-    const code = s === 'found' ? Math.floor(1000 + Math.random() * 9000).toString() : null;
-    const { error } = await supabase.from('items').insert({ title: t.trim(), description: d?.trim() || null, category: c, status: s, location: l?.trim() || null, lost_found_date: dt, photo_url: photo, reporter_id: session.user.id, reporter_email: session.user.email, reporter_phone: p?.trim() || null, pickup_location: pl?.trim() || null, pickup_code: code });
+    const { error } = await supabase.from('items').insert({ title: t.trim(), description: d?.trim() || null, category: c, status: s, location: l?.trim() || null, lost_found_date: dt, photo_url: photo, reporter_id: session.user.id, reporter_email: session.user.email, reporter_phone: p?.trim() || null });
     setUp(false);
     if (error) return alert('Could not post item. Please try again.');
     navigate('/my-items');
@@ -209,11 +189,6 @@ function Report({ navigate, session }) {
           <input type="date" value={dt} onChange={e => setDt(e.target.value)} className="h-11 w-full rounded-xl border bg-white px-3 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
           <textarea placeholder="Brand, color, identifying marks…" value={d} onChange={e => setD(e.target.value)} className="w-full min-h-[90px] rounded-xl border bg-white px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
           <Input label="Your phone" placeholder="so finders can reach you" value={p} onChange={e => setP(e.target.value)} />
-          {s === 'found' && (
-            <div className="space-y-2">
-              <Input label="Where are you holding it?" placeholder="e.g. Security desk, Building A" value={pl} onChange={e => setPl(e.target.value)} />
-            </div>
-          )}
           <label className="flex items-center gap-2 text-sm">
             <input type="file" accept="image/*" ref={f} className="block text-sm text-muted" />
             <span className="text-gray-500">{f.current?.files?.[0] ? `${f.current.files[0].name} (${Math.round(f.current.files[0].size / 1024)}KB)` : 'Add a photo'}</span>
@@ -225,37 +200,16 @@ function Report({ navigate, session }) {
   );
 }
 
-function Item({ id, navigate }) {
+function Item({ id }) {
   const [i, setI] = useState(null);
   const [load, setLoad] = useState(true);
   const { session } = useApp();
-  const [codeInput, setCodeInput] = useState('');
   const [msg, setMsg] = useState('');
-  const [matches, setMatches] = useState([]);
-  const [matching, setMatching] = useState(false);
-  const matchDebounce = useRef(null);
-
-  const findAiMatches = async () => {
-    if (matchDebounce.current) clearTimeout(matchDebounce.current);
-    matchDebounce.current = setTimeout(async () => {
-      setMatching(true);
-      try {
-        const cur = await hfEmbedding(i.title + ' ' + (i.description || '') + ' ' + (i.location || ''));
-        const { data: allItems } = await supabase.from('items').select('*, profiles(full_name)').neq('id', id);
-        const other = allItems.filter(x => x.status === (i.status === 'lost' ? 'found' : 'lost') || x.status === 'returned');
-        const scored = await Promise.all(other.map(async (item) => {
-          const emb = await hfEmbedding(item.title + ' ' + (item.description || '') + ' ' + (item.location || ''));
-          return { item, sim: cosine(cur, emb) };
-        }));
-        scored.sort((x, y) => y.sim - x.sim);
-        setMatches(scored.slice(0, 3));
-      } catch (err) { alert('AI matches unavailable.'); } finally { setMatching(false); matchDebounce.current = null; }
-    }, 300);
-  };
 
   useEffect(() => {
-    supabase.from('items').select('*, profiles(full_name)').eq('id', id).single().then(({ data }) => { setI(data); setLoad(false); });
-    const ch = supabase.channel('item-live-' + id).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'items', filter: 'id=eq.' + id }, ({ new: n }) => setI(n)).subscribe();
+    const load = () => supabase.from('items').select('*').eq('id', id).single().then(({ data }) => { setI(data); setLoad(false); });
+    load();
+    const ch = supabase.channel('item-live-' + id).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'items', filter: 'id=eq.' + id }, load).subscribe();
     return () => supabase.removeChannel(ch);
   }, [id]);
 
@@ -266,25 +220,8 @@ function Item({ id, navigate }) {
     setMsg('Item marked as claimed.');
   };
 
-  const genCode = async () => {
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    const { error } = await supabase.from('items').update({ status: 'found', pickup_code: code }).eq('id', id);
-    if (error) return alert('Could not update item.');
-    setI({ ...i, status: 'found', pickup_code: code });
-    setMsg('Pickup code: ' + code);
-  };
-
-  const verifyCode = async () => {
-    if (codeInput !== i.pickup_code) return setMsg('Wrong code.');
-    const { error } = await supabase.from('items').update({ status: 'returned' }).eq('id', id);
-    if (error) return alert('Could not update item.');
-    setI({ ...i, status: 'returned' });
-    setMsg('Item returned.');
-  };
-
   const pu = i?.photo_url && import.meta.env.VITE_SUPABASE_URL + '/storage/v1/object/public/item-photos/' + i.photo_url;
   const mine = i?.reporter_id === session?.user?.id;
-  const isFinder = mine && i.status === 'found';
 
   if (load) return <div className="py-20 text-center text-gray-500">Loading…</div>;
   if (!i) return <div className="py-20 text-center text-gray-500">Not found.</div>;
@@ -306,46 +243,9 @@ function Item({ id, navigate }) {
             {i.reporter_phone && <a href={'tel:' + i.reporter_phone} className="inline-flex items-center gap-2 rounded-xl border bg-gray-50 px-3 py-2 text-sm shadow-sm hover:bg-gray-100">📱 {i.reporter_phone}</a>}
           </div>
           {mine && i.status === 'lost' && <Btn onClick={claim} className="mt-4 w-full">Mark as claimed</Btn>}
-          {isFinder && i.pickup_code ? (
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-green-700">Pickup code:</span>
-                <span className="text-sm font-mono bg-green-100 px-2 py-1 rounded-lg">{i.pickup_code}</span>
-                <Btn onClick={genCode} className="text-xs px-2">New</Btn>
-              </div>
-              <p className="text-xs text-gray-500">Tell the finder this code at {i.pickup_location || 'the meeting spot'}</p>
-            </div>
-          ) : isFinder ? <Btn onClick={genCode} className="w-full">Generate pickup code</Btn> : null}
-          {!mine && i.status === 'found' && i.pickup_code ? (
-            <div className="mt-4 space-y-2">
-              <Input label="Enter pickup code to claim" value={codeInput} onChange={e => setCodeInput(e.target.value)} maxLength={4} />
-              <Btn onClick={verifyCode} className="w-full">Claim item</Btn>
-            </div>
-          ) : null}
-          <div className="mt-5 pt-4 border-t">
-            <button onClick={findAiMatches} disabled={matching} className="w-full text-xs text-blue-600 underline hover:text-blue-700">
-              {matching ? 'Finding matches…' : 'Find AI matches'}
-            </button>
-            {matches.length > 0 && (
-              <div className="mt-3 space-y-2">
-                <p className="text-xs font-semibold text-gray-700">Possible matches:</p>
-                {matches.map(m => (
-                  <div key={m.item.id} className="rounded-lg border bg-blue-50 p-3 text-xs">
-                    <div className="flex justify-between">
-                      <span className="font-semibold">{m.item.title}</span>
-                      <span className="text-blue-600 font-mono">{Math.round(m.sim * 100)}% match</span>
-                    </div>
-                    <p className="text-gray-600">{m.item.location || '—'}</p>
-                    <button onClick={() => navigate(`/item/${m.item.id}`)} className="text-blue-600 underline">View</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {msg && <p className={`text-sm ${msg.includes('Wrong') ? 'text-red-500' : 'text-green-600'}`}>{msg}</p>}
+          {msg && <p className="mt-3 text-sm text-green-600">{msg}</p>}
         </div>
       </Card>
-      <p className="text-center text-xs text-gray-400">Posted by {i.profiles?.full_name || 'A student'}</p>
     </div>
   );
 }

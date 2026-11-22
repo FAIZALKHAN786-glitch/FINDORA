@@ -1,4 +1,3 @@
-import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -9,17 +8,12 @@ export default defineConfig({
     strictPort: true,
     watch: {
       ignored: [
-        '**/AppData/**',
         '**/node_modules/**',
+        '**/AppData/**',
         '**/NTUSER.DAT*',
         '**/ntuser.dat*',
         '**/AppData/Roaming/**',
       ],
-    },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
     },
   },
 });

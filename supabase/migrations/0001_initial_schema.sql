@@ -2,30 +2,6 @@
 
 create extension if not exists "pgcrypto";
 
--- profiles
-create table public.profiles (
-  id uuid references auth.users not null primary key,
-  full_name text,
-  student_id text,
-  email text,
-  avatar_url text,
-  created_at timestamptz default now()
-);
-
-alter table public.profiles enable row level security;
-
-create policy "Profiles are viewable by everyone"
-  on public.profiles for select
-  using ( true );
-
-create policy "Users can insert their own profile"
-  on public.profiles for insert
-  with check ( auth.uid() = id );
-
-create policy "Users can update their own profile"
-  on public.profiles for update
-  using ( auth.uid() = id );
-
 -- items
 create table public.items (
   id uuid default gen_random_uuid() primary key,
@@ -36,7 +12,7 @@ create table public.items (
   location text,
   lost_found_date date,
   photo_url text,
-  reporter_id uuid references public.profiles(id),
+  reporter_id uuid references auth.users(id),
   reporter_email text,
   reporter_phone text,
   created_at timestamptz default now(),
